@@ -14,7 +14,6 @@ services:
       - ADMIN_PASS=${ADMIN_PASS:-admin123}
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_here}
       - HOSTINGER_API_TOKEN=${HOSTINGER_API_TOKEN:-your_hostinger_api_token}
-      - VPS_ID=${VPS_ID:-1030000}
       - CPU_THRESHOLD=${CPU_THRESHOLD:-80}
       - RAM_THRESHOLD=${RAM_THRESHOLD:-80}
       - DISK_THRESHOLD=${DISK_THRESHOLD:-85}

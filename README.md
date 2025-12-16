@@ -12,6 +12,7 @@
 *   **🌍 Timezone Aware**: All logs, charts, and alerts respect your local timezone (e.g., `Asia/Kolkata`), ensuring you see exactly *when* issues occurred.
 *   **⚙️ Granular Control**: Set global resource thresholds or override them for specific VPS instances (e.g., `CPU_THRESHOLD_1030000`).
 *   **⚙️ Granular Control**: Set global resource thresholds or override them for specific VPS instances (e.g., `CPU_THRESHOLD_1030000`).
+*   **🏢 Multi-Account Support**: Manage multiple Hostinger accounts from a single dashboard. Easily switch between accounts to view relevant VPS instances.
 *   **🛠️ System Diagnostics**: Built-in Admin Panel to view live server logs and system configuration directly from the frontend.
 *   **🐳 Docker Ready**: Deployment is a breeze with Docker and Docker Compose.
 
@@ -53,8 +54,10 @@ ADMIN_PASS=securepassword123
 JWT_SECRET=your_super_secret_jwt_key
 
 # Hostinger API Configuration
+# Single Account
 HOSTINGER_API_TOKEN=your_hostinger_api_token
-VPS_ID=1030000,778406  # Comma-separated list of VPS IDs to monitor
+# Multiple Accounts (Format: [AccountName=Token],[AccountName2=Token2])
+# HOSTINGER_API_TOKEN=[GW=your_token_1],[Arekiv=your_token_2]
 
 # Alerting Configuration (Email)
 SMTP_HOST=smtp.gmail.com

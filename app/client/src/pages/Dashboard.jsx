@@ -1,16 +1,26 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import apiClient from '../api/axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { LogOut, Activity, HardDrive, Cpu, Network, Server, ChevronDown, Settings, Terminal } from 'lucide-react';
+import { LogOut, Activity, HardDrive, Cpu, Network, Server, ChevronDown, Settings, Terminal, Users } from 'lucide-react';
 
 const Dashboard = () => {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [vpsIds, setVpsIds] = useState([]);
   const [selectedVps, setSelectedVps] = useState('');
+  const [searchParams, setSearchParams] = setSearchParamsHook();
+  const selectedAccount = searchParams.get('account') || 'All';
   const [vpsSpecs, setVpsSpecs] = useState(null);
   const [checkInterval, setCheckInterval] = useState(180);
+
+  // Filter VPS list based on account - MOVED HERE TO AVOID CONDITIONAL HOOK CALL
+  const filteredVpsList = useMemo(() => {
+    return (!selectedAccount || selectedAccount === 'All') 
+      ? vpsIds 
+      : vpsIds.filter(v => (v.account_name || 'Default') === selectedAccount);
+  }, [vpsIds, selectedAccount]);
+
   // Admin State
   const [showAdmin, setShowAdmin] = useState(false);
   const [systemConfig, setSystemConfig] = useState(null);
@@ -18,6 +28,9 @@ const Dashboard = () => {
   const adminSectionRef = useRef(null);
   const logsContainerRef = useRef(null);
   const navigate = useNavigate();
+
+  // Helper workaround for tool limitations on hooks
+  function setSearchParamsHook() { return useSearchParams(); }
 
   const fetchConfig = async () => {
     try {
@@ -118,6 +131,13 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [showAdmin]);
 
+  // Derived state: Unique accounts
+  const accounts = vpsIds.length > 0 
+    ? [...new Set(vpsIds.map(v => v.account_name || 'Default').filter(Boolean))] 
+    : [];
+  
+  // NOTE: Auto-select logic is now handled by SelectAccount page or defaults to 'All' here.
+
   // Scroll to Admin section when opened
   useEffect(() => {
     if (showAdmin && adminSectionRef.current) {
@@ -142,6 +162,19 @@ const Dashboard = () => {
         return () => clearInterval(interval);
     }
   }, [selectedVps, checkInterval]);
+
+  // Update selected VPS when filtered list changes (Moved here to be before loading check)
+  useEffect(() => {
+    if (filteredVpsList.length > 0) {
+      // Use String comparison to handle potential number/string mismatches
+      const isCurrentVpsValid = filteredVpsList.some(v => String(v.id) === String(selectedVps));
+      
+      if (!isCurrentVpsValid) {
+        // If current selection is invalid for this account, switch to first available
+        setSelectedVps(filteredVpsList[0].id);
+      }
+    }
+  }, [filteredVpsList]); 
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -222,9 +255,16 @@ const Dashboard = () => {
     </div>
   );
 
-  const currentData = metrics && metrics.length > 0 ? metrics : generateMockData(selectedVps);
+  // Use real data. If empty, show empty.
+  const currentData = metrics || [];
   const chartData = currentData;
-  const latestData = chartData[chartData.length - 1];
+  const latestData = chartData.length > 0 ? chartData[chartData.length - 1] : { cpu: 0, ram: 0, disk: 0, net: 0, cpuPercent: 0, ramPercent: 0, diskPercent: 0 };
+
+
+
+  // Grid view logic moved to separate component.
+
+
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0e1a' }}>
@@ -258,7 +298,46 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
-             {vpsIds.length > 1 && (
+             
+             {/* Account Selector */}
+             {accounts.length > 2 && (
+               <div style={{ position: 'relative' }}>
+                   <div style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8' }}>
+                      <Users size={16} />
+                   </div>
+                   <select 
+                      value={selectedAccount} 
+                      onChange={(e) => {
+                          setSearchParams({ account: e.target.value });
+                          // Reset selected VPS to first in that account
+                          const newDetails = e.target.value === 'All' 
+                            ? vpsIds 
+                            : vpsIds.filter(v => (v.account_name || 'Default') === e.target.value);
+                          if (newDetails.length > 0) setSelectedVps(newDetails[0].id);
+                      }}
+                      style={{
+                          background: 'rgba(30, 41, 59, 0.8)',
+                          color: '#f8fafc',
+                          border: '1px solid rgba(51, 65, 85, 0.8)',
+                          padding: '0.625rem 2.5rem 0.625rem 2.5rem',
+                          borderRadius: '8px',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          appearance: 'none',
+                          minWidth: '160px'
+                      }}
+                   >
+                       {['All', ...accounts].map(acc => (
+                           <option key={acc} value={acc}>{acc}</option>
+                       ))}
+                   </select>
+                   <ChevronDown size={16} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#94a3b8' }} />
+                 </div>
+             )}
+
+             {/* VPS Selector */}
+             {vpsIds.length > 0 && (
                  <div style={{ position: 'relative' }}>
                    <select 
                       value={selectedVps} 
@@ -276,9 +355,9 @@ const Dashboard = () => {
                           minWidth: '200px'
                       }}
                    >
-                       {vpsIds.map(vps => (
+                       {filteredVpsList.map(vps => (
                            <option key={vps.id} value={vps.id}>
-                               {vps.hostname ? `${vps.hostname} (${vps.plan})` : `VPS ${vps.id}`}
+                                {vps.hostname ? `${vps.hostname} (${vps.plan})` : `VPS ${vps.id}`}
                            </option>
                        ))}
                    </select>

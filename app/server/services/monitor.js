@@ -4,6 +4,43 @@ require('dotenv').config();
 
 const API_BASE_URL = 'https://developers.hostinger.com/api/vps/v1';
 
+// Global map to store which token belongs to which VPS ID
+// format: vpsId (string) -> { token: string, name: string }
+const vpsOwnerMap = new Map();
+
+const parseTokens = () => {
+    const raw = process.env.HOSTINGER_API_TOKEN || '';
+    const tokens = [];
+
+    // Check for new format: [Name=Token],[Name2=Token2]
+    // Regex: \[([^=]+)=([^\]]+)\]
+    const matches = raw.matchAll(/\[([^=]+)=([^\]]+)\]/g);
+    let found = false;
+    for (const match of matches) {
+        found = true;
+        tokens.push({ name: match[1], token: match[2] });
+    }
+
+    // Fallback for single token (old format)
+    if (!found && raw.trim().length > 0) {
+        tokens.push({ name: 'Default', token: raw.trim() });
+    }
+
+    return tokens;
+};
+
+const getTokenForVps = (vpsId) => {
+    // Try to find the exact token for this VPS
+    const owner = vpsOwnerMap.get(parseInt(vpsId)) || vpsOwnerMap.get(String(vpsId));
+    if (owner) return owner.token;
+
+    // Fallback: use the first available token
+    const tokens = parseTokens();
+    if (tokens.length > 0) return tokens[0].token;
+
+    return '';
+};
+
 const transformData = (apiData, specs) => {
     if (!apiData) return [];
 
@@ -66,9 +103,10 @@ const transformData = (apiData, specs) => {
 
 const getMetrics = async (vpsId, dateFrom, dateTo) => {
     try {
+        const token = getTokenForVps(vpsId);
         const response = await axios.get(`${API_BASE_URL}/virtual-machines/${vpsId}/metrics`, {
             headers: {
-                'Authorization': `Bearer ${process.env.HOSTINGER_API_TOKEN}`
+                'Authorization': `Bearer ${token}`
             },
             params: {
                 date_from: dateFrom,
@@ -92,14 +130,19 @@ const getVPSSpecs = async (vpsId) => {
     }
 
     try {
+        const token = getTokenForVps(vpsId);
         const response = await axios.get(`${API_BASE_URL}/virtual-machines/${vpsId}`, {
             headers: {
-                'Authorization': `Bearer ${process.env.HOSTINGER_API_TOKEN}`
+                'Authorization': `Bearer ${token}`
             }
         });
 
+        const owner = vpsOwnerMap.get(parseInt(vpsId)) || vpsOwnerMap.get(String(vpsId));
+        const accountName = owner ? owner.name : 'Default';
+
         const specs = {
             id: vpsId,
+            account_name: accountName,
             ram_mb: response.data.memory || 0,  // API returns 'memory' in MB
             disk_gb: response.data.disk ? (response.data.disk / 1024).toFixed(0) : 0,  // API returns 'disk' in MB, convert to GB
             cpu_cores: response.data.cpus || 0,  // API returns 'cpus'
@@ -120,14 +163,55 @@ const getVPSSpecs = async (vpsId) => {
     }
 };
 
+const fetchVPSListFromAPI = async () => {
+    const tokens = parseTokens();
+    const allVpsIds = [];
+
+    console.log(`Checking ${tokens.length} Hostinger accounts for VPS instances...`);
+
+    for (const { name, token } of tokens) {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/virtual-machines`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            let ids = [];
+            if (response.data && response.data.data) {
+                ids = response.data.data.map(vm => vm.id);
+            } else if (Array.isArray(response.data)) {
+                ids = response.data.map(vm => vm.id);
+            }
+
+            console.log(`Account [${name}] found ${ids.length} VPS: ${ids.join(', ')}`);
+
+            ids.forEach(id => {
+                // Store mapping for later use
+                vpsOwnerMap.set(id, { token, name });
+                vpsOwnerMap.set(String(id), { token, name }); // Store as string too for safety
+                allVpsIds.push(id);
+            });
+
+        } catch (error) {
+            console.error(`Failed to fetch VPS list for account [${name}]:`, error.message);
+        }
+    }
+
+    // Remove duplicates if any
+    return [...new Set(allVpsIds)];
+};
+
 const initializeVPSSpecs = async () => {
     console.log('Initializing VPS specifications...');
-    const vpsIds = process.env.VPS_ID ? process.env.VPS_ID.split(',').map(id => id.trim()) : [];
+    const vpsIds = await fetchVPSListFromAPI();
 
     if (vpsIds.length === 0) {
-        console.log('No VPS IDs configured for initialization.');
+        console.log('No VPS IDs discovered from API or Config.');
         return;
     }
+
+    console.log(`Discovered ${vpsIds.length} VPS instances to monitor: ${vpsIds.join(', ')}`);
 
     for (const vpsId of vpsIds) {
         try {
@@ -137,11 +221,13 @@ const initializeVPSSpecs = async () => {
             console.error(`Failed to initialize specs for VPS ${vpsId}:`, error.message);
         }
     }
+    return vpsIds;
 };
 
 const checkAndAlert = async () => {
     console.log('Running health check...');
-    const vpsIds = process.env.VPS_ID ? process.env.VPS_ID.split(',').map(id => id.trim()) : [];
+    // Always fetch latest list in case new VPS created
+    const vpsIds = await fetchVPSListFromAPI();
 
     if (vpsIds.length === 0) {
         console.log('No VPS IDs configured.');
@@ -365,7 +451,7 @@ const checkAndAlert = async () => {
 };
 
 const getAllVPSSpecs = async () => {
-    const vpsIds = process.env.VPS_ID ? process.env.VPS_ID.split(',').map(id => id.trim()) : [];
+    const vpsIds = await fetchVPSListFromAPI();
     const allSpecs = [];
 
     for (const vpsId of vpsIds) {

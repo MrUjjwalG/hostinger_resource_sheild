@@ -103,9 +103,7 @@ appRouter.get('/api/config', verifyToken, async (req, res) => {
         });
     } catch (error) {
         console.error('Failed to get VPS config:', error);
-        // Fallback
-        const envVpsIds = process.env.VPS_ID ? process.env.VPS_ID.split(',').map(id => id.trim()) : [];
-        res.json({ vpsIds: envVpsIds });
+        res.status(500).json({ error: 'Failed to fetch config' });
     }
 });
 
@@ -113,14 +111,16 @@ appRouter.get('/api/config', verifyToken, async (req, res) => {
 appRouter.get('/api/vps-specs', verifyToken, async (req, res) => {
     try {
         const { vpsId } = req.query;
-        const envVpsIds = process.env.VPS_ID ? process.env.VPS_ID.split(',').map(id => id.trim()) : [];
-        const targetVpsId = vpsId || envVpsIds[0];
+        // Prioritize provided ID. If not, we might need a default, but better to enforce providing one or fetching list first.
 
-        if (!targetVpsId) {
-            return res.status(400).json({ error: 'No VPS ID provided or configured' });
+        if (!vpsId) {
+            // If no ID provided, try to fetch list and return first one?
+            // Or just error out and let frontend handle default via /api/config response
+            // Frontend flow: call /api/config -> get list -> call /api/vps-specs?vpsId=...
+            return res.status(400).json({ error: 'No VPS ID provided' });
         }
 
-        const specs = await getVPSSpecs(targetVpsId);
+        const specs = await getVPSSpecs(vpsId);
         res.json(specs);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch VPS specifications' });
@@ -132,12 +132,8 @@ appRouter.get('/api/metrics', verifyToken, async (req, res) => {
     // Default to 180 minutes as per user request example if not specified
     const { timeRange = 180, vpsId } = req.query;
 
-    // Use provided vpsId, or the first one from the list in env
-    const envVpsIds = process.env.VPS_ID ? process.env.VPS_ID.split(',').map(id => id.trim()) : [];
-    const targetVpsId = vpsId || envVpsIds[0];
-
-    if (!targetVpsId) {
-        return res.status(400).json({ error: 'No VPS ID configured or provided' });
+    if (!vpsId) {
+        return res.status(400).json({ error: 'No VPS ID provided' });
     }
 
     const now = new Date();
@@ -150,8 +146,8 @@ appRouter.get('/api/metrics', verifyToken, async (req, res) => {
     const { getMetrics, transformData, getVPSSpecs } = require('./services/monitor');
 
     try {
-        const specs = await getVPSSpecs(targetVpsId);
-        const rawData = await getMetrics(targetVpsId, dateFrom, dateTo);
+        const specs = await getVPSSpecs(vpsId);
+        const rawData = await getMetrics(vpsId, dateFrom, dateTo);
         const formattedData = transformData(rawData, specs);
         // Wrap in { data: ... } as expected by frontend
         res.json({ data: formattedData });
