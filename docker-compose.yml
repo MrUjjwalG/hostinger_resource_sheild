@@ -1,0 +1,24 @@
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-3000}:5000"
+    environment:
+      - PORT=5000
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASS=${ADMIN_PASS:-admin123}
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_here}
+      - HOSTINGER_API_TOKEN=${HOSTINGER_API_TOKEN:-your_hostinger_api_token}
+      - VPS_ID=${VPS_ID:-1030000}
+      - CPU_THRESHOLD=${CPU_THRESHOLD:-80}
+      - RAM_THRESHOLD=${RAM_THRESHOLD:-80}
+      - DISK_THRESHOLD=${DISK_THRESHOLD:-85}
+      - CHECK_INTERVAL_MINUTES=${CHECK_INTERVAL_MINUTES:-15}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-your_email@gmail.com}
+      - SMTP_PASS=${SMTP_PASS:-your_email_password}
+      - ALERT_EMAIL=${ALERT_EMAIL:-admin@example.com}
+    restart: unless-stopped
