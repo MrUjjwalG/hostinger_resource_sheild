@@ -5,8 +5,11 @@ import ProtectedRoute from './components/ProtectedRoute';
 import './index.css';
 
 function App() {
+  // Get base path from Vite env (will be '/monitor/')
+  const basename = (import.meta.env.BASE_URL || '/monitor/').replace(/\/$/, '');
+  
   return (
-    <Router>
+    <Router basename={basename}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route 

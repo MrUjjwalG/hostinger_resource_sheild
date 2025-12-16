@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import apiClient from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { LogOut, Activity, HardDrive, Cpu, Network, Server, ChevronDown } from 'lucide-react';
@@ -16,7 +16,7 @@ const Dashboard = () => {
   const fetchConfig = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/config', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await apiClient.get('/api/config', { headers: { Authorization: `Bearer ${token}` } });
       
       // Handle new response format { vpsList: [...] } or fallback { vpsIds: [...] }
       if (res.data.checkInterval) {
@@ -53,7 +53,7 @@ const Dashboard = () => {
       const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const minutesSinceMidnight = Math.max(1, Math.floor((now - midnight) / 60000));
 
-      const res = await axios.get(`/api/metrics?timeRange=${minutesSinceMidnight}&vpsId=${vpsId}`, {
+      const res = await apiClient.get(`/api/metrics?timeRange=${minutesSinceMidnight}&vpsId=${vpsId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = res.data.data || []; 
@@ -72,7 +72,7 @@ const Dashboard = () => {
     if (!vpsId) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`/api/vps-specs?vpsId=${vpsId}`, {
+      const res = await apiClient.get(`/api/vps-specs?vpsId=${vpsId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setVpsSpecs(res.data);

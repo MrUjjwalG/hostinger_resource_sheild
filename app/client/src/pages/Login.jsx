@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../api/axios';
 import { Lock, User } from 'lucide-react';
 
 const Login = () => {
@@ -13,7 +13,7 @@ const Login = () => {
     e.preventDefault();
     try {
       // Use relative path for API
-      const res = await axios.post('/auth/login', { username, password });
+      const res = await apiClient.post('/auth/login', { username, password });
       localStorage.setItem('token', res.data.token);
       navigate('/');
     } catch (err) {
