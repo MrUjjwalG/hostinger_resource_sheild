@@ -12,6 +12,44 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// In-memory log buffer (keep last 500 lines)
+const LOG_BUFFER_SIZE = 500;
+const logBuffer = [];
+
+// Monkey-patch console methods to capture logs
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+function captureLog(type, args) {
+    const timestamp = new Date().toISOString();
+    const message = args.map(arg =>
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+    ).join(' ');
+
+    logBuffer.push({ timestamp, type, message });
+    if (logBuffer.length > LOG_BUFFER_SIZE) {
+        logBuffer.shift();
+    }
+}
+
+console.log = (...args) => {
+    captureLog('info', args);
+    originalLog.apply(console, args);
+};
+
+console.error = (...args) => {
+    captureLog('error', args);
+    originalError.apply(console, args);
+};
+
+console.warn = (...args) => {
+    captureLog('warn', args);
+    originalWarn.apply(console, args);
+};
+
+// Base path configuration for subpath deployment
+
 // Base path configuration for subpath deployment
 const BASE_PATH = process.env.BASE_PATH || '/monitor';
 const appRouter = express.Router();
@@ -28,6 +66,29 @@ appRouter.post('/auth/login', (req, res) => {
     } else {
         res.status(401).json({ error: 'Invalid credentials' });
     }
+});
+
+// Extended Config Route for Admin View
+appRouter.get('/api/admin/system-config', verifyToken, async (req, res) => {
+    const safeEnv = { ...process.env };
+    // Redact sensitive keys
+    const redactions = ['ADMIN_PASS', 'JWT_SECRET', 'HOSTINGER_API_TOKEN', 'SMTP_PASS'];
+    redactions.forEach(key => {
+        if (safeEnv[key]) safeEnv[key] = '******';
+    });
+
+    res.json({
+        env: safeEnv,
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage(),
+        serverTime: new Date().toISOString()
+    });
+});
+
+// Logs Route
+appRouter.get('/api/admin/logs', verifyToken, (req, res) => {
+    // Return logs in chronological order (oldest first)
+    res.json(logBuffer);
 });
 
 // Config Route

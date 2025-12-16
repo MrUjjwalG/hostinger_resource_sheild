@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import apiClient from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { LogOut, Activity, HardDrive, Cpu, Network, Server, ChevronDown } from 'lucide-react';
+import { LogOut, Activity, HardDrive, Cpu, Network, Server, ChevronDown, Settings, Terminal } from 'lucide-react';
 
 const Dashboard = () => {
   const [metrics, setMetrics] = useState(null);
@@ -11,6 +11,12 @@ const Dashboard = () => {
   const [selectedVps, setSelectedVps] = useState('');
   const [vpsSpecs, setVpsSpecs] = useState(null);
   const [checkInterval, setCheckInterval] = useState(180);
+  // Admin State
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [systemConfig, setSystemConfig] = useState(null);
+  const [logs, setLogs] = useState([]);
+  const adminSectionRef = useRef(null);
+  const logsContainerRef = useRef(null);
   const navigate = useNavigate();
 
   const fetchConfig = async () => {
@@ -41,11 +47,13 @@ const Dashboard = () => {
     }
   };
 
-  const fetchMetrics = async (vpsId) => {
+  const fetchMetrics = async (vpsId, isBackground = false) => {
     if (!vpsId) return;
     try {
-      setLoading(true);
-      setMetrics(null);
+      if (!isBackground) {
+        setLoading(true);
+        setMetrics(null);
+      }
       const token = localStorage.getItem('token');
       
       // Calculate minutes since midnight for "today's data"
@@ -64,7 +72,7 @@ const Dashboard = () => {
         navigate('/login');
       }
     } finally {
-        setLoading(false);
+        if (!isBackground) setLoading(false);
     }
   };
 
@@ -86,11 +94,51 @@ const Dashboard = () => {
     fetchConfig();
   },[]);
 
+  // Admin Data Fetching
+  useEffect(() => {
+    let interval;
+    if (showAdmin) {
+      const fetchAdminData = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const [configRes, logsRes] = await Promise.all([
+            apiClient.get('/api/admin/system-config', { headers: { Authorization: `Bearer ${token}` } }),
+            apiClient.get('/api/admin/logs', { headers: { Authorization: `Bearer ${token}` } })
+          ]);
+          setSystemConfig(configRes.data);
+          setLogs(logsRes.data);
+        } catch (error) {
+          console.error("Failed to fetch admin data", error);
+        }
+      };
+      
+      fetchAdminData();
+      interval = setInterval(fetchAdminData, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [showAdmin]);
+
+  // Scroll to Admin section when opened
+  useEffect(() => {
+    if (showAdmin && adminSectionRef.current) {
+      setTimeout(() => {
+        adminSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [showAdmin]);
+
+  // Auto-scroll logs to bottom
+  useEffect(() => {
+    if (showAdmin && logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+    }
+  }, [logs, showAdmin]);
+
   useEffect(() => {
     if (selectedVps) {
         fetchMetrics(selectedVps);
         fetchVPSSpecs(selectedVps);
-        const interval = setInterval(() => fetchMetrics(selectedVps), 60000); 
+        const interval = setInterval(() => fetchMetrics(selectedVps, true), 60000); 
         return () => clearInterval(interval);
     }
   }, [selectedVps, checkInterval]);
@@ -244,6 +292,24 @@ const Dashboard = () => {
                    }} />
                  </div>
              )}
+            <button onClick={() => setShowAdmin(!showAdmin)} style={{ 
+              background: showAdmin ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+              border: `1px solid ${showAdmin ? '#3b82f6' : 'rgba(51, 65, 85, 0.8)'}`,
+              padding: '0.625rem 1rem',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              color: showAdmin ? '#3b82f6' : '#f8fafc',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              marginRight: '0.5rem'
+            }}>
+              <Settings size={16} />
+              <span>Admin</span>
+            </button>
             <button onClick={handleLogout} style={{ 
               background: 'transparent', 
               border: '1px solid rgba(51, 65, 85, 0.8)',
@@ -629,6 +695,93 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Admin Section */}
+        {showAdmin && (
+          <div ref={adminSectionRef} style={{ marginTop: '2rem', borderTop: '1px solid rgba(51, 65, 85, 0.5)', paddingTop: '2rem' }}>
+             <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f8fafc', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Terminal size={24} color="#3b82f6" />
+              System Diagnostics
+             </h2>
+
+             <div className="grid" style={{ gridTemplateColumns: '1fr', gap: '1.5rem' }}>
+               {/* Config Card */}
+               <div style={{
+                  background: 'rgba(15, 23, 42, 0.6)',
+                  padding: '1.5rem',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(30, 41, 59, 0.8)',
+               }}>
+                  <h3 style={{ color: '#94a3b8', fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Settings size={18} /> Configuration
+                  </h3>
+                  {systemConfig ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                       {Object.entries(systemConfig.env).filter(([k]) => !k.startsWith('npm_')).map(([key, value]) => (
+                         <div key={key} style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.4)' }}>
+                            <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem' }}>{key}</div>
+                            <div style={{ color: '#e2e8f0', fontSize: '0.875rem', wordBreak: 'break-all', fontFamily: 'monospace' }}>{String(value)}</div>
+                         </div>
+                       ))}
+                       <div style={{ background: 'rgba(30, 41, 59, 0.4)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.4)' }}>
+                            <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.25rem' }}>UPTIME</div>
+                            <div style={{ color: '#e2e8f0', fontSize: '0.875rem', fontFamily: 'monospace' }}>{Math.floor(systemConfig.uptime / 60)} minutes</div>
+                       </div>
+                    </div>
+                  ) : (
+                    <div style={{ color: '#64748b' }}>Loading config...</div>
+                  )}
+               </div>
+
+               {/* Logs Card */}
+               <div style={{
+                  background: '#0f172a',
+                  padding: '1.5rem',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(30, 41, 59, 0.8)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '500px'
+               }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ color: '#94a3b8', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Terminal size={18} /> Live Server Logs
+                    </h3>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                       <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Auto-refreshing (5s)</span>
+                    </div>
+                  </div>
+                  
+                  <div ref={logsContainerRef} style={{ 
+                    flex: 1, 
+                    overflowY: 'auto', 
+                    background: '#020617', 
+                    borderRadius: '8px', 
+                    padding: '1rem',
+                    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                    fontSize: '0.8rem',
+                    color: '#e2e8f0',
+                    border: '1px solid #1e293b'
+                  }}>
+                    {logs.length > 0 ? logs.map((log, index) => (
+                      <div key={index} style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+                        <span style={{ color: '#64748b', minWidth: '150px' }}>[{new Date(log.timestamp).toLocaleTimeString()}]</span>
+                        <span style={{ 
+                          color: log.type === 'error' ? '#ef4444' : log.type === 'warn' ? '#f59e0b' : '#22c55e',
+                          textTransform: 'uppercase',
+                          fontWeight: 'bold',
+                          minWidth: '60px'
+                        }}>{log.type}</span>
+                        <span style={{ whiteSpace: 'pre-wrap' }}>{log.message}</span>
+                      </div>
+                    )) : (
+                      <div style={{ color: '#64748b', fontStyle: 'italic' }}>No logs available...</div>
+                    )}
+                  </div>
+               </div>
+             </div>
+          </div>
+        )}
 
       </div>
     </div>

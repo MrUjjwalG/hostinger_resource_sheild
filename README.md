@@ -11,6 +11,8 @@
 *   **🚨 Smart Alerting**: Detects resource "spikes" within your configured check interval. Sends email alerts only when thresholds are breached.
 *   **🌍 Timezone Aware**: All logs, charts, and alerts respect your local timezone (e.g., `Asia/Kolkata`), ensuring you see exactly *when* issues occurred.
 *   **⚙️ Granular Control**: Set global resource thresholds or override them for specific VPS instances (e.g., `CPU_THRESHOLD_1030000`).
+*   **⚙️ Granular Control**: Set global resource thresholds or override them for specific VPS instances (e.g., `CPU_THRESHOLD_1030000`).
+*   **🛠️ System Diagnostics**: Built-in Admin Panel to view live server logs and system configuration directly from the frontend.
 *   **🐳 Docker Ready**: Deployment is a breeze with Docker and Docker Compose.
 
 ## 🛠️ Tech Stack
@@ -126,13 +128,29 @@ Your HTML template can use the following placeholders which will be automaticall
 *   `{{latestDataTime}}`: Timestamp of the data point that triggered the alert.
 *   `{{alertItems}}`: A pre-formatted HTML list (`<li>...</li>`) of all triggered alerts.
 *   `{{timestamp}}`: The time the email was generated.
+*   `{{alertItems}}`: A pre-formatted HTML list (`<li>...</li>`) of all triggered alerts.
+*   `{{timestamp}}`: The time the email was generated.
 
+### 🛡️ Admin Dashboard & Diagnostics
+The application includes a built-in Admin Panel for monitoring the health of the monitoring system itself.
+
+**Accessing**:
+1. Login to the dashboard.
+2. Click the **Admin** button in the top navigation bar.
+
+**Features**:
+*   **System Configuration**: View loaded environment variables (passwords/secrets are automatically redacted) and server uptime.
+*   **Live Server Logs**: View real-time logs from the backend server. The logs auto-refresh every 5 seconds, making it easy to debug connection issues or verify alert triggers without accessing the server shell.
 ## 🖥️ API Reference
 
 The backend provides a few endpoints used by the dashboard:
 
 *   `GET /api/config`: Returns public configuration (like check interval).
 *   `GET /api/metrics`: Fetches formatted metrics for the dashboard.
+*   `GET /api/config`: Returns public configuration (like check interval).
+*   `GET /api/metrics`: Fetches formatted metrics for the dashboard.
+*   `GET /api/admin/logs`: (Protected) Fetches live server logs.
+*   `GET /api/admin/system-config`: (Protected) Fetches redacted system environment variables.
 *   `POST /auth/login`: Admin login.
 
 ## 🤝 Contributing
