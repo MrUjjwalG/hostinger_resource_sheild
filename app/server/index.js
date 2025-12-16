@@ -135,6 +135,7 @@ cron.schedule(cronExpression, checkAndAlert, {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`Base Path: ${BASE_PATH}`);
     console.log(`Health checks configured as: ${checkIntervalRaw} (expression: ${cronExpression})`);
     console.log(`Thresholds: CPU=${process.env.CPU_THRESHOLD || 80}%, RAM=${process.env.RAM_THRESHOLD || 80}%, DISK=${process.env.DISK_THRESHOLD || 85}%`);
     // Initialize VPS specifications on startup

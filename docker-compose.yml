@@ -3,10 +3,13 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
+      args:
+        BASE_PATH: ${BASE_PATH:-/monitor}
     ports:
       - "${PORT:-3000}:5000"
     environment:
       - PORT=5000
+      - BASE_PATH=${BASE_PATH:-/monitor}
       - ADMIN_USER=${ADMIN_USER:-admin}
       - ADMIN_PASS=${ADMIN_PASS:-admin123}
       - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_key_here}

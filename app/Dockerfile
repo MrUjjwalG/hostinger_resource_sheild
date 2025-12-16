@@ -4,6 +4,8 @@ WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm install
 COPY client/ .
+ARG BASE_PATH
+ENV VITE_BASE_PATH=$BASE_PATH
 RUN npm run build
 
 # Production Stage for Node Server
