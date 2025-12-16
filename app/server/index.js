@@ -11,10 +11,16 @@ const { sendAlertEmail } = require('./services/email');
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('../client/dist')); // Serve React build
+
+// Base path configuration for subpath deployment
+const BASE_PATH = process.env.BASE_PATH || '/monitor';
+const appRouter = express.Router();
+
+// Serve React build static files under BASE_PATH
+appRouter.use(express.static('../client/dist'));
 
 // Auth Route
-app.post('/auth/login', (req, res) => {
+appRouter.post('/auth/login', (req, res) => {
     const { username, password } = req.body;
     if (username === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
         const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '12h' });
@@ -25,7 +31,8 @@ app.post('/auth/login', (req, res) => {
 });
 
 // Config Route
-app.get('/api/config', verifyToken, async (req, res) => {
+appRouter.get('/api/config', verifyToken, async (req, res) => {
+    // ... existing logic ...
     try {
         const { getAllVPSSpecs } = require('./services/monitor');
         const vpsList = await getAllVPSSpecs();
@@ -42,7 +49,7 @@ app.get('/api/config', verifyToken, async (req, res) => {
 });
 
 // VPS Specs Route
-app.get('/api/vps-specs', verifyToken, async (req, res) => {
+appRouter.get('/api/vps-specs', verifyToken, async (req, res) => {
     try {
         const { vpsId } = req.query;
         const envVpsIds = process.env.VPS_ID ? process.env.VPS_ID.split(',').map(id => id.trim()) : [];
@@ -60,7 +67,7 @@ app.get('/api/vps-specs', verifyToken, async (req, res) => {
 });
 
 // Metrics Route
-app.get('/api/metrics', verifyToken, async (req, res) => {
+appRouter.get('/api/metrics', verifyToken, async (req, res) => {
     // Default to 180 minutes as per user request example if not specified
     const { timeRange = 180, vpsId } = req.query;
 
@@ -91,6 +98,21 @@ app.get('/api/metrics', verifyToken, async (req, res) => {
         console.error('Error fetching metrics:', error);
         res.status(500).json({ error: 'Failed to fetch metrics' });
     }
+});
+
+// SPA Fallback: Serve index.html for any unknown route within BASE_PATH
+// This allows React Router to handle client-side routing (e.g., /monitor/dashboard)
+const path = require('path');
+appRouter.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../client/dist/index.html'));
+});
+
+// Mount the router
+app.use(BASE_PATH, appRouter);
+
+// Root redirect to BASE_PATH
+app.get('/', (req, res) => {
+    res.redirect(BASE_PATH);
 });
 
 // Setup cron job with configurable interval
