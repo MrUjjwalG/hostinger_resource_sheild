@@ -43,6 +43,7 @@ Create a `.env` file in the root directory. You can use the example below as a t
 # Server Configuration
 PORT=5000
 TZ=Asia/Kolkata  # Your Timezone
+BASE_PATH=/monitor # Subpath for deployment (default: /monitor)
 
 # Admin Authentication (for Dashboard)
 ADMIN_USER=admin
@@ -82,7 +83,7 @@ Build and start the container:
 docker-compose up --build -d
 ```
 
-Your application will be accessible at: `http://localhost:5000` (or the port defined in docker-compose).
+Your application will be accessible at: `http://localhost:5000/monitor` (or the port defined in docker-compose).
 
 ## 🔧 Configuration Guide
 
