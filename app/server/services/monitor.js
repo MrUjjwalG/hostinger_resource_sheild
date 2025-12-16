@@ -287,7 +287,16 @@ const checkAndAlert = async () => {
                     const vpsLabel = `${specs.hostname} (${specs.plan})`;
                     const alertMessage = `VPS ${vpsLabel} Alert (Latest Data: ${formatTime(latestDataTimestamp)}):\n${alerts.join('\n')}`;
                     console.warn(alertMessage);
-                    await sendAlertEmail(`Resource Shield Alert - ${vpsLabel}`, alertMessage);
+
+                    // Create HTML list items for the email template
+                    const alertItemsHtml = alerts.map(alert => `<li>${alert}</li>`).join('');
+
+                    await sendAlertEmail(`Resource Shield Alert - ${vpsLabel}`, alertMessage, {
+                        vpsName: specs.hostname,
+                        plan: specs.plan,
+                        alertItems: alertItemsHtml,
+                        latestDataTime: formatTime(latestDataTimestamp)
+                    });
                 } else {
                     console.log(`VPS ${vpsId}: Peak usage within normal range used: CPU:${maxCpu}% RAM:${maxRam} B Disk:${maxDisk} B`);
                 }

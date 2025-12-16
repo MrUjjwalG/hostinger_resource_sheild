@@ -18,10 +18,12 @@ services:
       - CPU_THRESHOLD=${CPU_THRESHOLD:-80}
       - RAM_THRESHOLD=${RAM_THRESHOLD:-80}
       - DISK_THRESHOLD=${DISK_THRESHOLD:-85}
-      - CHECK_INTERVAL_MINUTES=${CHECK_INTERVAL_MINUTES:-15}
+      - CHECK_INTERVAL_MINUTES=${CHECK_INTERVAL_MINUTES:-17,47}
       - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
       - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USER=${SMTP_USER:-your_email@gmail.com}
       - SMTP_PASS=${SMTP_PASS:-your_email_password}
-      - ALERT_EMAIL=${ALERT_EMAIL:-admin@example.com}
+      - ALERT_EMAIL=${ALERT_EMAIL:-admin@example.com,devops@example.com}
+      - ALERT_CC=${ALERT_CC:-manager@example.com}
+      - EMAIL_TEMPLATE_PATH=${EMAIL_TEMPLATE_PATH:-/app/server/email-template.html}
     restart: unless-stopped

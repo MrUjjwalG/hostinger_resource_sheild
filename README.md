@@ -59,7 +59,13 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_app_specific_password
-ALERT_EMAIL=admin@example.com
+
+# Email Recipients
+ALERT_EMAIL=admin@example.com,devops@example.com  # Comma-separated list of primary recipients
+ALERT_CC=manager@example.com,monitor@example.com  # Comma-separated list of CC recipients
+
+# Email Customization (Optional)
+EMAIL_TEMPLATE_PATH=/app/server/email-template.html  # Path to custom HTML template
 
 # Resource Thresholds (Global)
 CPU_THRESHOLD=80      # Percentage
@@ -72,7 +78,7 @@ DISK_THRESHOLD=85     # Percentage
 
 # Monitoring Schedule
 # Monitor specific minutes of the hour (e.g., check at xx:27 and xx:46)
-CHECK_INTERVAL_MINUTES=27,46
+CHECK_INTERVAL_MINUTES=17,47
 ```
 
 ### 3. Run with Docker
@@ -98,6 +104,28 @@ The system automatically calculates the "lookback window" based on your schedule
 You can override global thresholds for critical servers. For a VPS with ID `123456`, add these to your `.env`:
 *   `CPU_THRESHOLD_123456=50`
 *   `RAM_THRESHOLD_123456=90`
+
+### 📧 Email Alert Customization
+Resource Shield supports advanced email configuration to fit your operational needs.
+
+#### Multiple Recipients
+You can send alerts to multiple people by providing a comma-separated list in `ALERT_EMAIL` and `ALERT_CC`.
+```properties
+ALERT_EMAIL=admin@tech.com, oncall@tech.com
+ALERT_CC=lead@tech.com
+```
+
+#### Custom HTML Templates
+The system comes with a professional dark-themed email template by default. To use your own, mount your custom HTML file into the container and point `EMAIL_TEMPLATE_PATH` to it.
+
+**Template Variables:**
+Your HTML template can use the following placeholders which will be automatically replaced:
+*   `{{subject}}`: The subject line of the alert.
+*   `{{vpsName}}`: Hostname of the affected VPS.
+*   `{{plan}}`: Changes plan (e.g., KVM 4).
+*   `{{latestDataTime}}`: Timestamp of the data point that triggered the alert.
+*   `{{alertItems}}`: A pre-formatted HTML list (`<li>...</li>`) of all triggered alerts.
+*   `{{timestamp}}`: The time the email was generated.
 
 ## 🖥️ API Reference
 

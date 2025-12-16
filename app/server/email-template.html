@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Shield Alert</title>
+    <style>
+        /* Base Reset */
+        body,
+        p,
+        div,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background-color: #d70000;
+            color: #e2e8f0;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout */
+        .wrapper {
+            width: 100%;
+            background-color: #d70000;
+            padding: 40px 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #1e293b;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(to right, #1e293b, #0f172a);
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+        }
+
+        .logo-text {
+            color: #60a5fa;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Content */
+        .content {
+            padding: 32px;
+        }
+
+        .alert-badge {
+            display: inline-block;
+            background-color: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .alert-detail {
+            background-color: #0f172a;
+            border-left: 4px solid #ef4444;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-radius: 4px;
+        }
+
+        .vps-info {
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .vps-name {
+            color: #fff;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        /* Alert List */
+        ul.alerts-list {
+            margin: 0;
+            padding-left: 20px;
+            color: #fca5a5;
+            /* Light red text */
+        }
+
+        ul.alerts-list li {
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #1e293b;
+            padding: 24px;
+            text-align: center;
+            border-top: 1px solid #334155;
+        }
+
+        .footer-text {
+            color: #64748b;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo-text">
+                    🛡️ Resource Shield
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <span class="alert-badge">CRITICAL ALERT</span>
+
+                <div class="alert-detail">
+                    <div class="vps-info">
+                        VPS Instance: <span class="vps-name">{{vpsName}}</span> <span
+                            style="color: #64748b;">({{plan}})</span>
+                        <br>
+                        <span style="font-size: 12px; opacity: 0.8;">Data Timestamp: {{latestDataTime}}</span>
+                    </div>
+
+                    <ul class="alerts-list">
+                        {{alertItems}}
+                    </ul>
+                </div>
+
+                <p style="color: #94a3b8; font-size: 14px;">
+                    Please login to your Hostinger VPS management console to investigate the resource usage spikes.
+                </p>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p class="footer-text">
+                    Generated on {{timestamp}}<br>
+                    &copy; 2025 Resource Shield. Automated Monitoring System.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
