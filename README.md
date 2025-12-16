@@ -31,8 +31,8 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/hostinger-resource-shield.git
-cd hostinger-resource-shield
+git clone https://github.com/MrUjjwalG/hostinger_resource_sheild.git
+cd hostinger_resource_sheild
 ```
 
 ### 2. Configure Environment Variables
