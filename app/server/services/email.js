@@ -38,7 +38,7 @@ const sendAlertEmail = async (subject, text, context = {}) => {
       const fullContext = {
         subject,
         text: text.replace(/</g, "&lt;").replace(/>/g, "&gt;"), // Basic XSS prevention for fallback
-        timestamp: new Date().toLocaleString(),
+        timestamp: new Date().toLocaleString('en-GB', { timeZoneName: 'short' }),
         ...context // Override with passed context
       };
 

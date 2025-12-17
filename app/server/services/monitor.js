@@ -312,7 +312,8 @@ const checkAndAlert = async () => {
                 month: '2-digit',
                 year: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                timeZoneName: 'short'
             });
 
             console.log(`VPS ${vpsId}: Checking data window [${formatTime(checkStartTimeSeconds)} to ${formatTime(latestDataTimestamp)}] (Latest data ts: ${latestDataTimestamp})`);

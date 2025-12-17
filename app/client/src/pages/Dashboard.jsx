@@ -70,11 +70,14 @@ const Dashboard = () => {
       const token = localStorage.getItem('token');
       
       // Calculate minutes since midnight for "today's data"
+      // Calculate time range: use at least 180 minutes (3h) or time since midnight if longer
+      // This prevents empty graphs just after midnight when "time since midnight" is small
       const now = new Date();
       const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const minutesSinceMidnight = Math.max(1, Math.floor((now - midnight) / 60000));
+      const minutesSinceMidnight = Math.floor((now - midnight) / 60000);
+      const timeRange = Math.max(180, minutesSinceMidnight);
 
-      const res = await apiClient.get(`/api/metrics?timeRange=${minutesSinceMidnight}&vpsId=${vpsId}`, {
+      const res = await apiClient.get(`/api/metrics?timeRange=${timeRange}&vpsId=${vpsId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = res.data.data || []; 
