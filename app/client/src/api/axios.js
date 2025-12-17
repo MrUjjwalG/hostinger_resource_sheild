@@ -7,4 +7,17 @@ const apiClient = axios.create({
   baseURL: baseURL,
 });
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Check if 401 and NOT from login endpoint
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    if (error.response && error.response.status === 401 && !isLoginRequest) {
+      localStorage.removeItem('token');
+      window.location.href = `${baseURL}/login`;
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default apiClient;
